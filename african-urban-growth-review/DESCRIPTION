@@ -1,0 +1,35 @@
+Package: africanUrbanGrowthReview
+Title: African Urban Growth Research — Systematic Review Analysis
+Version: 1.0.0
+Authors@R:
+    person("Alvin", "Adu-Asare", , "alvinkofiaduasare@gmail.com",
+           role = c("aut", "cre"))
+Description: Analytical pipeline for a PRISMA-compliant systematic review of
+    African urban growth research 2015-2025 (n = 183 studies).  Reproduces every
+    figure, table and statistical test reported in the companion Nature Cities
+    manuscript, plus the exploratory analyses performed during the review.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.2)
+Imports:
+    tidyverse (>= 2.0.0),
+    scales,
+    knitr,
+    kableExtra,
+    broom,
+    car,
+    rstatix,
+    effectsize,
+    corrplot,
+    sf,
+    rnaturalearth,
+    rnaturalearthdata,
+    viridis,
+    RColorBrewer,
+    ggrepel,
+    rmarkdown
+Suggests:
+    renv,
+    testthat (>= 3.0.0)
+URL: https://github.com/<USER>/african-urban-growth-review
+BugReports: https://github.com/<USER>/african-urban-growth-review/issues

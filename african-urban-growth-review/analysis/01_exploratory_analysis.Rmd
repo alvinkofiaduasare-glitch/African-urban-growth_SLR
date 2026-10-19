@@ -1,0 +1,334 @@
+---
+title: "African Urban Growth Research — Exploratory Analyses"
+subtitle: "Additional tests performed during the review but not reported in the manuscript"
+author: "Alvin Adu-Asare"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    fig_width: 10
+    fig_height: 6
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_width: 10
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 10,
+  fig.height = 6,
+  fig.path = "../outputs/figures/exploratory_"
+)
+```
+
+# Scope
+
+This document contains analyses that were carried out while scoping the review but are **not reported in the manuscript**. They informed the authors' decisions about what to emphasise but do not appear in the published paper. They are preserved here for transparency and so future reviewers or readers can inspect the analytical choices.
+
+Analyses included:
+
+- Expansion-rate distribution and comparisons (ANOVA, Kruskal-Wallis, Dunn's post-hoc)
+- Correlation between population and expansion rate (Pearson, Spearman)
+- Linear regression predicting expansion rate
+- Logistic regression predicting predictive-modelling uptake
+- Welch's t-test comparing accuracy by method type
+- ANOVA for accuracy by city size
+- Fisher's exact test for method × city size
+- Driver co-occurrence matrix
+- Satellite platform usage
+- Model-accuracy distributions
+- Informal-prediction sub-analysis
+
+```{r packages}
+library(tidyverse)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(car)         # Levene's test, ANOVA tools
+library(rstatix)     # pairwise tests and effect sizes
+library(effectsize)  # Cohen's d, Cramér's V, η²
+library(corrplot)
+
+theme_set(
+  theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", size = 13),
+      plot.subtitle = element_text(colour = "grey40", size = 11),
+      panel.grid.minor = element_blank()
+    )
+)
+
+pal_blue  <- c("#185FA5", "#378ADD", "#85B7EB", "#B5D4F4", "#E6F1FB")
+pal_teal  <- c("#085041", "#0F6E56", "#1D9E75", "#5DCAA5", "#9FE1CB")
+pal_coral <- c("#993C1D", "#D85A30", "#F0997B", "#F5C4B3")
+
+pal_size <- c(
+  "Megacity"          = "#185FA5",
+  "Large City"        = "#378ADD",
+  "Medium-sized City" = "#1D9E75",
+  "Small City"        = "#5DCAA5",
+  "Very Small City"   = "#9FE1CB"
+)
+```
+
+```{r load-data}
+df <- read_csv("../data/urban_growth_cleaned.csv", show_col_types = FALSE)
+
+classify_city <- function(pop) {
+  case_when(
+    is.na(pop)   ~ "Unknown",
+    pop > 10e6   ~ "Megacity",
+    pop >= 5e6   ~ "Large City",
+    pop >= 1e6   ~ "Medium-sized City",
+    pop >= 250e3 ~ "Small City",
+    TRUE         ~ "Very Small City"
+  )
+}
+
+df <- df %>%
+  mutate(
+    city_size = factor(
+      classify_city(population),
+      levels = c("Megacity", "Large City", "Medium-sized City",
+                 "Small City", "Very Small City", "Unknown")
+    ),
+    region = ifelse(specific_region %in%
+                      c("Unknown", "Western Africa, Middle Africa"),
+                    "Unknown", specific_region)
+  )
+```
+
+# Expansion-rate analysis
+
+The urban-expansion-rate variable is severely right-skewed in the corpus.
+
+```{r expansion-dist, fig.cap="Distribution of annual urban expansion rates (capped at 25 %)."}
+exp_data <- df %>% filter(!is.na(expansion_clean))
+
+ggplot(exp_data %>% filter(expansion_clean <= 25),
+       aes(x = expansion_clean)) +
+  geom_histogram(bins = 40, fill = pal_blue[1], colour = "white") +
+  geom_vline(xintercept = median(exp_data$expansion_clean),
+             colour = pal_coral[2], linetype = "dashed", linewidth = 1) +
+  labs(title = "Distribution of annual urban expansion rates (capped at 25 %)",
+       subtitle = sprintf("Mean = %.2f%%, Median = %.2f%%, Max = %.1f%%",
+                          mean(exp_data$expansion_clean),
+                          median(exp_data$expansion_clean),
+                          max(exp_data$expansion_clean)),
+       x = "Annual expansion rate (%)", y = "Number of studies")
+```
+
+## Expansion rate by city size
+
+```{r anova-exp-size}
+exp_data_size <- df %>%
+  filter(!is.na(expansion_clean), city_size != "Unknown")
+
+# ANOVA (reported as not met the variance homogeneity assumption)
+aov_exp <- aov(expansion_clean ~ city_size, data = exp_data_size)
+summary(aov_exp)
+eta_squared(aov_exp)
+
+# Levene's test
+leveneTest(expansion_clean ~ city_size, data = exp_data_size)
+
+# Non-parametric alternative
+kw_exp_size <- kruskal.test(expansion_clean ~ city_size, data = exp_data_size)
+print(kw_exp_size)
+
+exp_data_size %>% kruskal_effsize(expansion_clean ~ city_size)
+
+# Dunn's post-hoc
+dunn_exp <- exp_data_size %>%
+  dunn_test(expansion_clean ~ city_size, p.adjust.method = "bonferroni")
+print(dunn_exp)
+```
+
+## Expansion rate by region
+
+```{r kw-exp-region}
+kw_exp_region <- kruskal.test(expansion_clean ~ region,
+  data = df %>% filter(!is.na(expansion_clean), region != "Unknown"))
+print(kw_exp_region)
+```
+
+## Correlation: population × expansion rate
+
+```{r corr-pop-exp}
+cor_data <- df %>% filter(!is.na(population), !is.na(expansion_clean))
+pearson_pe  <- cor.test(cor_data$population, cor_data$expansion_clean)
+spearman_pe <- cor.test(cor_data$population, cor_data$expansion_clean,
+                        method = "spearman")
+print(pearson_pe)
+print(spearman_pe)
+```
+
+## Linear regression — expansion predictors
+
+```{r linear-expansion}
+lm_data <- df %>%
+  filter(!is.na(expansion_clean), city_size != "Unknown",
+         region != "Unknown", expansion_clean <= 30) %>%
+  mutate(city_size = relevel(factor(city_size), ref = "Small City"),
+         region    = relevel(factor(region), ref = "Western Africa"))
+
+lm_exp <- lm(expansion_clean ~ city_size + region + pub_year, data = lm_data)
+summary(lm_exp)
+```
+
+# Predictive-modelling uptake
+
+## Chi-square: prediction × city size
+
+```{r chi-pred-size}
+tab_ps <- table(df$city_size[df$city_size != "Unknown"],
+                df$urban_prediction_bin[df$city_size != "Unknown"])
+chi_ps <- chisq.test(tab_ps[-6,])
+cramer_ps <- cramers_v(tab_ps[-6,])
+print(chi_ps); print(cramer_ps)
+```
+
+## Chi-square: prediction × region
+
+```{r chi-pred-region}
+tab_pr <- table(df$region[df$region != "Unknown"],
+                df$urban_prediction_bin[df$region != "Unknown"])
+chi_pr <- chisq.test(tab_pr)
+cramer_pr <- cramers_v(tab_pr)
+print(chi_pr); print(cramer_pr)
+```
+
+## Logistic regression — predicting prediction uptake
+
+```{r logistic-prediction}
+log_data <- df %>%
+  filter(city_size != "Unknown", region != "Unknown") %>%
+  mutate(city_size = relevel(factor(city_size), ref = "Small City"),
+         region    = relevel(factor(region), ref = "Western Africa"))
+
+log_mod <- glm(urban_prediction_bin ~ city_size + region + pub_year,
+               family = binomial, data = log_data)
+summary(log_mod)
+
+or_tbl <- tidy(log_mod, exponentiate = TRUE, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(across(c(estimate, conf.low, conf.high, p.value), ~ round(., 3)))
+
+kable(or_tbl,
+      caption = "Odds ratios for predictive modelling uptake",
+      col.names = c("Predictor", "OR", "SE", "z", "p", "CI low", "CI high")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+# Model accuracy comparisons
+
+## Welch's t-test — accuracy by method
+
+```{r ttest-accuracy}
+acc_q <- df$accuracy_pct[df$method == "Quantitative" & !is.na(df$accuracy_pct)]
+acc_m <- df$accuracy_pct[df$method == "Mixed"        & !is.na(df$accuracy_pct)]
+t_acc <- t.test(acc_q, acc_m)
+d_acc <- cohens_d(acc_q, acc_m)
+print(t_acc); print(d_acc)
+```
+
+## ANOVA — accuracy by city size
+
+```{r anova-accuracy-size}
+acc_data <- df %>% filter(!is.na(accuracy_pct), city_size != "Unknown")
+aov_acc <- aov(accuracy_pct ~ city_size, data = acc_data)
+summary(aov_acc)
+eta_squared(aov_acc)
+leveneTest(accuracy_pct ~ city_size, data = acc_data)
+```
+
+## Fisher's exact — method × city size
+
+```{r fisher-method-size}
+tab_ms <- table(df$city_size[df$city_size != "Unknown"],
+                df$method[df$city_size != "Unknown"])
+fisher_ms <- fisher.test(tab_ms, simulate.p.value = TRUE, B = 10000)
+print(fisher_ms)
+```
+
+# Driver co-occurrence matrix
+
+```{r driver-matrix, fig.cap="Co-occurrence of growth driver categories."}
+driver_cols <- df %>%
+  select(has_demography, has_migration, has_planning,
+         has_roads, has_conflict, has_economy) %>%
+  mutate_all(as.integer)
+
+driver_cor <- cor(driver_cols)
+colnames(driver_cor) <- rownames(driver_cor) <-
+  c("Demography", "Migration", "Planning", "Roads", "Conflict", "Economy")
+
+corrplot(driver_cor, method = "color", type = "upper",
+         tl.col = "black", tl.cex = 0.9,
+         addCoef.col = "black", number.cex = 0.8,
+         col = colorRampPalette(c(pal_coral[2], "white", pal_blue[1]))(200),
+         title = "Driver co-occurrence (Pearson correlations)",
+         mar = c(0, 0, 2, 0))
+```
+
+# Satellite platform usage
+
+```{r satellite, fig.cap="Satellite platforms used across studies."}
+sat <- df %>%
+  mutate(sat_grouped = case_when(
+    satellite == "Landsat"                                       ~ "Landsat only",
+    str_detect(satellite, "Landsat") & satellite != "Landsat"    ~ "Landsat + other",
+    str_detect(satellite, "Sentinel")                            ~ "Sentinel",
+    satellite == "Unknown"                                       ~ "Unknown",
+    TRUE                                                          ~ "Other / Land cover product"
+  )) %>%
+  count(sat_grouped) %>%
+  mutate(pct = 100 * n / sum(n))
+
+ggplot(sat, aes(x = reorder(sat_grouped, n), y = n, fill = sat_grouped)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = sprintf("%d (%.1f%%)", n, pct)),
+            hjust = -0.05, size = 3.5) +
+  scale_fill_manual(values = c(pal_blue[1], pal_blue[2], pal_teal[3],
+                               pal_coral[2], "grey60")) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
+  coord_flip() +
+  labs(title = "Satellite platform usage across the corpus",
+       x = NULL, y = "Number of studies") +
+  theme(legend.position = "none")
+```
+
+# Informal-prediction sub-analysis
+
+```{r informal-prediction}
+df %>%
+  count(informal_prediction) %>%
+  kable(caption = "Studies including predictive modelling for informal settlements",
+        col.names = c("Informal prediction", "n")) %>%
+  kable_styling(full_width = FALSE)
+
+tab_ip <- table(df$city_size[df$city_size != "Unknown"],
+                df$informal_prediction[df$city_size != "Unknown"])
+fisher_ip <- fisher.test(tab_ip, simulate.p.value = TRUE, B = 10000)
+print(fisher_ip)
+```
+
+# Session info
+
+```{r session-info}
+sessionInfo()
+```

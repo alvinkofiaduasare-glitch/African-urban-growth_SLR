@@ -1,0 +1,19 @@
+PLACEHOLDER — replace this file with the actual urban_growth_cleaned.csv
+========================================================================
+
+This repository was set up before the dataset file was placed here.
+
+Before running the analyses:
+
+1. Export the final analytical dataset from the project spreadsheet
+   (one row per included study, 183 rows total).
+2. Save it as `data/urban_growth_cleaned.csv` using UTF-8 encoding.
+3. Delete this placeholder file.
+
+The column schema expected by the analysis scripts is documented in
+`data/README.md`. The scripts use `read_csv()` from `readr`, so standard
+RFC 4180 CSV with a header row is correct.
+
+If you prefer to work from the project spreadsheet directly, the
+`00_main_analysis.Rmd` chunk `load-data` is the only place that reads the
+CSV — point it at your preferred source there.
