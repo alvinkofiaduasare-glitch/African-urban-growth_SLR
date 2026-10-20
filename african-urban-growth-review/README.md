@@ -2,7 +2,7 @@
 
 Code and data companion to:
 
-> **Adu-Asare, A. et al.** *The informal settlement gap in African urban growth research: a systematic review of 183 studies* (2026). Submitted to *Nature Cities*.
+> **Adu-Asare, Alvin & Sharifi Ayyoob** *Urban growth research across Africa shows persistent geographic and methodological gaps* (2026). Submitted to *Nature Cities*.
 
 [![R](https://img.shields.io/badge/R-%E2%89%A54.2-blue)](https://www.r-project.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
