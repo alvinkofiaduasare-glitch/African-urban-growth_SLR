@@ -22,7 +22,7 @@ This repository contains the full analytical pipeline for a PRISMA-compliant sys
 
 The code reproduces every figure, table and statistical test reported in the paper (Figures 1–6, Tables 1–2, Tables S1–S2) and includes the exploratory analyses performed during the review that are not reported in the final manuscript.
 
-
+This release tracks **corpus v9** (`data/urban_abstracts_reviewed_updated_new_9.xlsm`). The change from the earlier v8 snapshot is documented in [`data/README.md`](data/README.md#change-log-v8--v9); in short, the spatial typology of informal-settlement growth for 13 non-informal-focused studies was moved into the overall `Spatial forms` field, and v9 fills in or corrects a number of previously blank cells (city, sub-region, method, drivers). No study was added or removed.
 
 ## Repository structure
 
@@ -44,7 +44,8 @@ African-urban-growth_SLR/
 │
 ├── scripts/
 │   ├── clean_corpus.py             # Rebuilds the cleaned CSV from the raw corpus workbook
-│   └── review_coding.csv           # Dual-review method/accuracy adjudications applied by the script
+│   ├── review_coding.csv           # Dual-review method/accuracy adjudications applied by the script
+│   └── make_outputs.py             # Renders the figures & tables into outputs/ without R (matplotlib)
 │
 ├── data/
 │   ├── README.md                   # Data dictionary, variable definitions, v8→v9 change log
@@ -52,8 +53,8 @@ African-urban-growth_SLR/
 │   └── urban_growth_cleaned.csv    # Primary analytical dataset (183 studies)
 │
 ├── outputs/
-│   ├── figures/                    # Figures generated at knit time
-│   └── tables/                     # Tables generated at knit time
+│   ├── figures/                    # Committed figures (Fig 1–5); regenerate via knit or make_outputs.py
+│   └── tables/                     # Committed tables (Table 1, 2, S2)
 │
 └── docs/
     └── reproduce.md                # Step-by-step reproduction guide
@@ -91,6 +92,17 @@ rmarkdown::render("analysis/01_exploratory_analysis.Rmd")
 ```
 
 Both documents knit to HTML and PDF by default. All figures land in `outputs/figures/` and all tables in `outputs/tables/`.
+
+### Without R
+
+A rendered copy of every figure and table is **committed** under `outputs/`. To regenerate them without an R toolchain:
+
+```bash
+pip install matplotlib
+python scripts/make_outputs.py
+```
+
+This reproduces Figures 1–5 and Tables 1, 2 and S2 from the dataset using the manuscript palette. The Figure 2 choropleth maps require the R `sf`/`rnaturalearth` stack, so `make_outputs.py` renders Figure 2 as the underlying per-country bars; knit the Rmd in R for the maps.
 
 See [`docs/reproduce.md`](docs/reproduce.md) for a full step-by-step walkthrough.
 
