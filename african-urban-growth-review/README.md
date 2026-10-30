@@ -22,7 +22,6 @@ This repository contains the full analytical pipeline for a PRISMA-compliant sys
 
 The code reproduces every figure, table and statistical test reported in the paper (Figures 1–6, Tables 1–2, Tables S1–S2) and includes the exploratory analyses performed during the review that are not reported in the final manuscript.
 
-This release tracks **corpus v9** (`data/urban_abstracts_reviewed_updated_new_9.xlsm`). The change from the earlier v8 snapshot is documented in [`data/README.md`](data/README.md#change-log-v8--v9); in short, the spatial typology of informal-settlement growth for 13 non-informal-focused studies was moved into the overall `Spatial forms` field, and v9 fills in or corrects a number of previously blank cells (city, sub-region, method, drivers). No study was added or removed.
 
 ## Repository structure
 
