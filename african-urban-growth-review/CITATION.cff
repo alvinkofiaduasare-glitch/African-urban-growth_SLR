@@ -2,13 +2,15 @@ cff-version: 1.2.0
 message: "If you use this software or dataset, please cite both the paper and the repository."
 type: software
 title: "African Urban Growth Research — Systematic Review Code & Data"
-version: "1.0.0"
-date-released: "2026-10-19"
+version: "2.0.0"
+date-released: "2026-10-30"
 authors:
   - family-names: "Adu-Asare"
     given-names: "Alvin"
     email: "alvinkofiaduasare@gmail.com"
-repository-code: "https://github.com/<USER>/african-urban-growth-review"
+  - family-names: "Sharifi"
+    given-names: "Ayyoob"
+repository-code: "https://github.com/alvinkofiaduasare-glitch/African-urban-growth_SLR"
 license: MIT
 keywords:
   - "systematic review"
@@ -21,10 +23,12 @@ keywords:
   - "SDG 11"
 preferred-citation:
   type: article
-  title: "The informal settlement gap in African urban growth research: a systematic review of 183 studies"
+  title: "Urban growth research across Africa shows persistent geographic and methodological gaps"
   authors:
     - family-names: "Adu-Asare"
       given-names: "Alvin"
+    - family-names: "Sharifi"
+      given-names: "Ayyoob"
   year: 2026
   journal: "Nature Cities"
   notes: "Under review"
