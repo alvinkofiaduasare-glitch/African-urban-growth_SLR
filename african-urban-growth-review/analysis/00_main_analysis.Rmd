@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 This document reproduces every figure, table and statistical test reported in the
 manuscript *"Urban growth research across Africa shows persistent geographic and
-methodological gaps"* (Adu-Asare & Sharifi, submitted to *Nature Cities*).
+methodological gaps"* (Adu-Asare & Sharifi).
 Exploratory analyses performed during the review but not reported in the paper
 (expansion-rate regressions, logistic models of prediction uptake, driver
 co-occurrence) live in `01_exploratory_analysis.Rmd`.
