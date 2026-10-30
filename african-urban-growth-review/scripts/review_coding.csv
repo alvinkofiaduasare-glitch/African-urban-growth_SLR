@@ -1,0 +1,10 @@
+match_doi,match_title,mapping_method_type,projection_method_type,mapping_accuracy,projection_accuracy,note
+10.1016/j.rse.2018.03.022,"Mapping patterns of urban development in Ouagadougou, Burkina Faso, using machine learning regression modeling with bi-seasonal Landsat time series",,,,,rule=(Machine learning|||)
+10.1016/j.envc.2022.100555,"Uncontrolled urbanization and expected unclogging of Congolese cities: Case of Bukavu city, Eastern DR Congo",,,,,rule=(Traditional||0.928|)
+,"Urban expansion and pattern analysis using Shannon’s entropy approach in Elminya Governorate, Upper Egypt",,Deep learning,,,rule=(Deep learning|||)
+,"Urban sprawl and land use/land-cover transition probabilities in peri-urban Kumasi, Ghana",Traditional,,,,rule=(Deep learning|||)
+10.3390/urbansci3010026,"Land-Use/Land-Cover Change Analysis and Urban Growth Modelling in the Greater Accra Metropolitan Area (GAMA), Ghana",,Deep learning,,,rule=(Traditional|Deep learning||)
+,"Urban expansion assessment by using remotely sensed data and the relative Shannon entropy model in GIS: A case study of Tripoli, Libya",Traditional,,,,rule=(Deep learning|||)
+,"Urban growth assessment and its impact on deforestation in Bauchi metropolis, Nigeria using remote sensing and GIS techniques",Traditional,,,,rule=(Deep learning|||)
+,Spatial dynamics of urban transition using remote sensing,Traditional,,,,rule=(Deep learning|||)
+10.3390/geomatics3030023,Temporal Autocorrelation of Sentinel-1 SAR Imagery for Detecting Settlement Expansion,,,,,rule=(Traditional||0.814|)
