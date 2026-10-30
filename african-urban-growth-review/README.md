@@ -2,11 +2,12 @@
 
 Code and data companion to:
 
-> **Adu-Asare, Alvin & Sharifi Ayyoob** *Urban growth research across Africa shows persistent geographic and methodological gaps* (2026). Submitted to *Nature Cities*.
+> **Adu-Asare, Alvin & Sharifi, Ayyoob.** *Urban growth research across Africa shows persistent geographic and methodological gaps* (2026). Submitted to *Nature Cities*.
 
 [![R](https://img.shields.io/badge/R-%E2%89%A54.2-blue)](https://www.r-project.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRISMA 2020](https://img.shields.io/badge/PRISMA-2020-brightgreen)](https://www.prisma-statement.org/)
+[![Corpus: v9](https://img.shields.io/badge/corpus-v9-informational)](data/README.md)
 
 ---
 
@@ -21,22 +22,33 @@ This repository contains the full analytical pipeline for a PRISMA-compliant sys
 
 The code reproduces every figure, table and statistical test reported in the paper (Figures 1–6, Tables 1–2, Tables S1–S2) and includes the exploratory analyses performed during the review that are not reported in the final manuscript.
 
+This release tracks **corpus v9** (`data/urban_abstracts_reviewed_updated_new_9.xlsm`). The change from the earlier v8 snapshot is documented in [`data/README.md`](data/README.md#change-log-v8--v9); in short, the spatial typology of informal-settlement growth for 13 non-informal-focused studies was moved into the overall `Spatial forms` field, and v9 fills in or corrects a number of previously blank cells (city, sub-region, method, drivers). No study was added or removed.
+
 ## Repository structure
 
 ```
-african-urban-growth-review/
+African-urban-growth_SLR/
 ├── README.md                       # This file
 ├── LICENSE                         # MIT License
 ├── CITATION.cff                    # Citation metadata (GitHub-aware)
 ├── DESCRIPTION                     # R package-style metadata and dependencies
 ├── .gitignore                      # Standard R / RStudio ignore patterns
 │
+├── R/
+│   ├── README.md
+│   └── 00_setup.R                  # Shared theme, palettes, city-size classifier, load_corpus()
+│
 ├── analysis/
 │   ├── 00_main_analysis.Rmd        # Analyses reported in the manuscript
 │   └── 01_exploratory_analysis.Rmd # Additional analyses (expansion rates, regressions)
 │
+├── scripts/
+│   ├── clean_corpus.py             # Rebuilds the cleaned CSV from the raw corpus workbook
+│   └── review_coding.csv           # Dual-review method/accuracy adjudications applied by the script
+│
 ├── data/
-│   ├── README.md                   # Data dictionary and variable definitions
+│   ├── README.md                   # Data dictionary, variable definitions, v8→v9 change log
+│   ├── urban_abstracts_reviewed_updated_new_9.xlsm  # Raw reviewer corpus (source of truth)
 │   └── urban_growth_cleaned.csv    # Primary analytical dataset (183 studies)
 │
 ├── outputs/
@@ -49,16 +61,26 @@ african-urban-growth-review/
 
 ## Data
 
-The analytical dataset (`data/urban_growth_cleaned.csv`) contains one row per included study (n = 183) with coded fields covering bibliographic metadata, geographic focus, urban-hierarchy classification (per the UN population thresholds — see Methods), satellite platform, modelling approach and reported accuracy, spatial typology, driver, scenario theme, and informal-settlement focus. See [`data/README.md`](data/README.md) for the full variable dictionary.
+The analytical dataset (`data/urban_growth_cleaned.csv`) contains one row per included study (n = 183) with coded fields covering bibliographic metadata, geographic focus, urban-hierarchy classification (per the UN population thresholds — see Methods), satellite platform, modelling approach and reported accuracy, spatial typology, driver, scenario theme, and informal-settlement focus. It is built from the raw reviewer workbook by `scripts/clean_corpus.py`. See [`data/README.md`](data/README.md) for the full variable dictionary and the rebuild command.
 
-**Data availability**: the structured dataset is included in this repository. The underlying 183 primary studies are the publicly available peer-reviewed sources cited in the manuscript's reference list.
+**Data availability**: both the raw reviewer corpus (`data/urban_abstracts_reviewed_updated_new_9.xlsm`) and the derived analytical dataset are included in this repository. The underlying 183 primary studies are the publicly available peer-reviewed sources cited in the manuscript's reference list.
 
 ## Reproducing the analyses
 
 ### Requirements
 
-- R ≥ 4.2
-- R packages listed in `DESCRIPTION` (install with `install.packages()` or `renv::restore()`)
+- R ≥ 4.2 and the packages listed in `DESCRIPTION` (install with `install.packages()` or `renv::restore()`)
+- Python ≥ 3.9 with `openpyxl` (only needed to rebuild the CSV from the raw workbook)
+
+### Rebuild the dataset from the raw corpus (optional)
+
+```bash
+pip install openpyxl
+python scripts/clean_corpus.py data/urban_abstracts_reviewed_updated_new_9.xlsm \
+                               data/urban_growth_cleaned.csv
+```
+
+The script normalises the raw fields, applies the dual-review method/accuracy adjudications in `scripts/review_coding.csv`, and runs sanity checks against the manuscript's v9 values before writing.
 
 ### One-shot run
 
@@ -76,12 +98,12 @@ See [`docs/reproduce.md`](docs/reproduce.md) for a full step-by-step walkthrough
 
 | Manuscript element | Rmd section |
 |---|---|
-| Figure 1 — PRISMA flow | Not reproduced in code (reported numbers in Methods) |
-| Figure 2 — Temporal distribution of studies | `00_main_analysis.Rmd` §Temporal trends |
-| Figure 3 — Geographic distribution of research | `00_main_analysis.Rmd` §Geographic distribution |
-| Figure 4 — Informal-settlement focus by region & hierarchy | `00_main_analysis.Rmd` §Informal settlement analysis |
-| Figure 5 — Methodological landscape | `00_main_analysis.Rmd` §Methodological landscape |
-| Figure 6 — Spatial typologies | `00_main_analysis.Rmd` §Spatial typologies |
+| Figure 1 — Temporal distribution of studies | `00_main_analysis.Rmd` §Temporal trends |
+| Figure 2 — Geographic distribution of research | `00_main_analysis.Rmd` §Geographic distribution |
+| Figure 3 — Informal-settlement focus by region & hierarchy | `00_main_analysis.Rmd` §Informal settlement analysis |
+| Figure 4 — Methodological landscape (mapping & projection) | `00_main_analysis.Rmd` §Methodological landscape |
+| Figure 5 — Spatial typologies (overall & by sub-region) | `00_main_analysis.Rmd` §Spatial typologies |
+| Figure 6 — PRISMA flow | Not reproduced in code (methods diagram) |
 | Table 1 — Typology by driver | `00_main_analysis.Rmd` §Spatial typologies |
 | Table 2 — Scenario themes | `00_main_analysis.Rmd` §Scenario analysis |
 | Table S1 — Search string | Documented in `docs/reproduce.md` |
@@ -94,7 +116,7 @@ See [`docs/reproduce.md`](docs/reproduce.md) for a full step-by-step walkthrough
 | Pearson χ² with Cramér's V | Period × urban hierarchy | §Temporal trends |
 | Pearson χ² with Cramér's V | Urban hierarchy × informal-settlement focus | §Informal settlement analysis |
 
-Additional exploratory tests (Kruskal-Wallis, ANOVA, logistic and linear regression, Spearman correlation, Fisher's exact) are performed in `01_exploratory_analysis.Rmd`. These informed the review but are not reported in the manuscript.
+Both reproduce exactly under v9 (χ²(8) = 18.24, *p* = 0.020, *n* = 164, V = 0.24; and χ²(4) = 12.86, *p* = 0.012, *n* = 164, V = 0.28). Additional exploratory tests (Kruskal-Wallis, ANOVA, logistic and linear regression, Spearman correlation, Fisher's exact) are performed in `01_exploratory_analysis.Rmd`. These informed the review but are not reported in the manuscript.
 
 ## Citing this work
 
@@ -111,3 +133,4 @@ Code is released under the [MIT License](LICENSE). The analytical dataset is rel
 ## Contact
 
 **Alvin Adu-Asare** — alvinkofiaduasare@gmail.com
+**Ayyoob Sharifi** (corresponding author)
