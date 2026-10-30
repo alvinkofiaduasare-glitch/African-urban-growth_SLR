@@ -1,7 +1,7 @@
 ---
 title: "African Urban Growth Research — Main Analysis"
-subtitle: "Reproduces every figure, table and statistical test reported in the manuscript"
-author: "Alvin Adu-Asare"
+subtitle: "Reproduces every figure, table and statistical test reported in the manuscript (corpus v9)"
+author: "Alvin Adu-Asare & Ayyoob Sharifi"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   html_document:
@@ -36,14 +36,30 @@ knitr::opts_chunk$set(
 
 # Scope
 
-This document reproduces every figure, table and statistical test reported in the manuscript *"The informal settlement gap in African urban growth research: a systematic review of 183 studies"*. Exploratory analyses performed during the review but not reported in the paper (expansion-rate regressions, logistic models of prediction uptake, driver co-occurrence) live in `01_exploratory_analysis.Rmd`.
+This document reproduces every figure, table and statistical test reported in the
+manuscript *"Urban growth research across Africa shows persistent geographic and
+methodological gaps"* (Adu-Asare & Sharifi, submitted to *Nature Cities*).
+Exploratory analyses performed during the review but not reported in the paper
+(expansion-rate regressions, logistic models of prediction uptake, driver
+co-occurrence) live in `01_exploratory_analysis.Rmd`.
 
-The analytical corpus is 183 peer-reviewed studies screened in from an initial 14,282 records retrieved from Web of Science and Scopus on 27 October 2025 (see Methods §Literature search and selection).
+The analytical corpus is 183 peer-reviewed studies screened in from an initial
+14,282 records retrieved from Web of Science and Scopus on 27 October 2025
+(see Methods §Literature search and selection). The dataset
+`data/urban_growth_cleaned.csv` is built from the reviewer corpus
+`data/urban_abstracts_reviewed_updated_new_9.xlsm` by `scripts/clean_corpus.py`
+(see `data/README.md`).
+
+**Manuscript ↔ figure numbering.** The manuscript numbers its display items as:
+Figure 1 (temporal), Figure 2 (geographic), Figure 3 (informal-settlement focus),
+Figure 4 (methodological landscape), Figure 5 (spatial typologies), Figure 6
+(PRISMA flow), Table 1 (typology by driver), Table 2 (scenario themes). This
+document follows that numbering. The PRISMA flow (Figure 6) is a methods diagram
+and is not regenerated from the corpus.
 
 # Package setup
 
 ```{r packages}
-# Core data manipulation and visualisation
 library(tidyverse)
 library(scales)
 library(knitr)
@@ -59,7 +75,6 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(viridis)
 
-# Consistent theme
 theme_set(
   theme_minimal(base_size = 12) +
     theme(
@@ -70,7 +85,6 @@ theme_set(
     )
 )
 
-# Palette
 pal_blue   <- c("#185FA5", "#378ADD", "#85B7EB", "#B5D4F4", "#E6F1FB")
 pal_teal   <- c("#085041", "#0F6E56", "#1D9E75", "#5DCAA5", "#9FE1CB")
 pal_coral  <- c("#993C1D", "#D85A30", "#F0997B", "#F5C4B3")
@@ -91,6 +105,17 @@ pal_size <- c(
   "Small City"        = "#5DCAA5",
   "Very Small City"   = "#9FE1CB"
 )
+
+pal_typology <- c(
+  "Peripheralisation" = "#185FA5",
+  "Fragmentation"     = "#1D9E75",
+  "Densification"     = "#534AB7",
+  "Ribbon"            = "#BA7517",
+  "Leapfrog"          = "#D85A30"
+)
+
+typology_levels <- c("Peripheralisation", "Fragmentation", "Densification",
+                     "Ribbon", "Leapfrog")
 ```
 
 # Data loading and preparation
@@ -136,7 +161,6 @@ df <- df %>%
     region  = ifelse(specific_region %in%
                        c("Unknown", "Western Africa, Middle Africa"),
                      "Unknown", specific_region),
-    # Three-period classification used throughout the manuscript
     period = case_when(
       pub_year %in% 2015:2018 ~ "2015-2018",
       pub_year %in% 2019:2022 ~ "2019-2022",
@@ -146,11 +170,29 @@ df <- df %>%
   )
 ```
 
-# Temporal trends — Figure 2 and Table S2
+## Occurrence-based spatial-typology table
 
-## Figure 2 — annual research output
+Spatial typology is a list-valued field: a study can report more than one form
+(`Peripheralisation; Densification`). Figure 5 and Table 1 count **occurrences** —
+each typology a study reports is counted once — so a long table of one row per
+(study × typology) is built here and reused below.
 
-```{r fig2-temporal, fig.cap="Figure 2. Temporal distribution of selected papers on urban growth in Africa, 2015–2025."}
+```{r spatial-long}
+spatial_long <- df %>%
+  filter(!is.na(spatial_form), spatial_form != "") %>%
+  separate_rows(spatial_form, sep = ";\\s*") %>%
+  mutate(spatial_form = str_trim(spatial_form)) %>%
+  filter(spatial_form %in% typology_levels)
+
+cat("Spatial-typology occurrences (overall):", nrow(spatial_long),
+    "across", n_distinct(spatial_long$study_id), "studies\n")
+```
+
+# Temporal trends — Figure 1 and Table S2
+
+## Figure 1 — annual research output
+
+```{r fig1-temporal, fig.cap="Figure 1. Temporal distribution of selected papers on urban growth in Africa, 2015–2025."}
 pub_trend <- df %>%
   count(pub_year) %>%
   mutate(
@@ -173,7 +215,10 @@ ggplot(pub_trend, aes(x = pub_year)) +
   )
 ```
 
-The manuscript reports: 7.5 studies/yr 2015–2018, 22 in 2019, 14 in 2020, 18 each in 2021 and 2022, 39 in 2023, 24 in 2024, 18 in 2025. Informal-settlement path: 0 in 2015–2016, first in 2017 (Shabat & Tapamo), 1–2/yr through 2022, 6 in 2023, 4 in 2024, 2 in 2025.
+Expected (manuscript, v9): 7.5 studies/yr 2015–2018 (6, 5, 9, 10), 22 in 2019,
+14 in 2020, 18 each in 2021 and 2022, 39 in 2023, 24 in 2024, 18 in 2025.
+Informal-settlement path: 0 in 2015–2016, first in 2017 (Shabat & Tapamo),
+1–2/yr through 2022, 6 in 2023, 4 in 2024, 2 in 2025.
 
 ## Table S2 — urban hierarchy composition by period
 
@@ -221,7 +266,7 @@ cat(sprintf(
 ))
 ```
 
-# Geographic distribution — Figure 3
+# Geographic distribution — Figure 2
 
 ## Top-10 countries by study count
 
@@ -238,9 +283,11 @@ kable(top10,
                 full_width = FALSE)
 ```
 
-Expected (manuscript): Nigeria 34, Ethiopia 29, Egypt 24, Ghana 20, Algeria 14, South Africa 11, Tanzania 11, Morocco 9. Together the eight leading contributors account for 83.1 % of the corpus.
+Expected (manuscript, v9): Nigeria 34, Ethiopia 29, Egypt 24, Ghana 20,
+Algeria 14, South Africa 11, Tanzania 11, Morocco 9. Together the eight leading
+contributors account for 83.1 % of the corpus (152 / 183).
 
-## Figure 3a — choropleth of studies per country
+## Figure 2a — choropleth of studies per country
 
 ```{r africa-base, results='hide'}
 africa <- ne_countries(continent = "Africa", returnclass = "sf", scale = "medium")
@@ -265,7 +312,7 @@ africa_map <- africa %>%
   mutate(studies = replace_na(studies, 0))
 ```
 
-```{r fig3a-studies-map, fig.cap="Figure 3a. Geographic distribution of urban growth research.", fig.height=8}
+```{r fig2a-studies-map, fig.cap="Figure 2a. Geographic distribution of urban growth research.", fig.height=8}
 ggplot(africa_map) +
   geom_sf(aes(fill = studies), colour = "white", linewidth = 0.3) +
   scale_fill_viridis_c(option = "mako", direction = -1, trans = "sqrt",
@@ -281,9 +328,9 @@ ggplot(africa_map) +
         plot.subtitle = element_text(colour = "grey40"))
 ```
 
-## Figure 3b — choropleth of informal-settlement research
+## Figure 2b — choropleth of informal-settlement research
 
-```{r fig3b-informal-map, fig.cap="Figure 3b. Geographic distribution of informal-settlement research.", fig.height=8}
+```{r fig2b-informal-map, fig.cap="Figure 2b. Geographic distribution of informal-settlement research.", fig.height=8}
 country_inf <- df %>%
   left_join(country_lookup, by = c("country" = "country_data")) %>%
   filter(!is.na(country_ne)) %>%
@@ -313,11 +360,11 @@ ggplot(africa_inf) +
         plot.subtitle = element_text(colour = "grey40"))
 ```
 
-# Informal-settlement analysis — Figure 4 and chi-square
+# Informal-settlement analysis — Figure 3 and chi-square
 
-## Figure 4a — informal focus by sub-region
+## Figure 3a — informal focus by sub-region
 
-```{r fig4a-informal-region, fig.cap="Figure 4a. Share of urban growth studies explicitly focusing on informal settlements by African sub-region."}
+```{r fig3a-informal-region, fig.cap="Figure 3a. Share of urban growth studies explicitly focusing on informal settlements by African sub-region."}
 informal_region <- df %>%
   filter(region != "Unknown") %>%
   group_by(region) %>%
@@ -338,9 +385,13 @@ ggplot(informal_region, aes(x = reorder(region, rate), y = rate, fill = region))
   theme(legend.position = "none")
 ```
 
-## Figure 4b — informal focus by urban hierarchy
+Expected (manuscript, v9): Western Africa 7 / 57 (12.3 %), the reference point
+for the regional discussion. Southern Africa shows the highest share and
+Middle Africa the lowest (0 / 2).
 
-```{r fig4b-informal-size, fig.cap="Figure 4b. Proportion of informal-settlement-focused studies across African urban hierarchy."}
+## Figure 3b — informal focus by urban hierarchy
+
+```{r fig3b-informal-size, fig.cap="Figure 3b. Proportion of informal-settlement-focused studies across African urban hierarchy."}
 informal_size <- df %>%
   filter(city_size != "Unknown") %>%
   group_by(city_size) %>%
@@ -382,17 +433,19 @@ cat(sprintf(
 ))
 ```
 
-# Methodological landscape — Figure 5
+# Methodological landscape — Figure 4
 
 The method categorisation follows the taxonomy defined in Methods §Analysis approach:
 *traditional* (maximum likelihood classification, cellular automata, regression-based models),
 *machine learning* (SVM, random forests), *deep learning* (CNN, CA-ANN, MLP-Markov).
+Mapping and projection are coded separately (`mapping_method_type`,
+`projection_method_type`); a study can contribute to one or both.
 
-## Figure 5a — mapping method share by period
+## Figure 4a — mapping method share by period
 
-```{r fig5a-mapping-methods, fig.cap="Figure 5a. Annual proportion of mapping tasks by method type."}
+```{r fig4a-mapping-methods, fig.cap="Figure 4a. Annual proportion of mapping tasks by method type."}
 mapping_period <- df %>%
-  filter(!is.na(period), !is.na(mapping_method_type)) %>%
+  filter(!is.na(period), !is.na(mapping_method_type), mapping_method_type != "") %>%
   count(period, mapping_method_type) %>%
   group_by(period) %>%
   mutate(share = n / sum(n)) %>%
@@ -410,13 +463,17 @@ ggplot(mapping_period,
        fill = "Method type")
 ```
 
-Expected (manuscript): traditional 66.9 % overall; ML in mapping grew from 20.0 % in 2015–2018 to 44.2 % in 2023–2025; DL barely features in mapping.
+Expected (manuscript, v9): among the 120 studies with a coded mapping method,
+traditional methods dominate (71) ahead of machine learning (46) and deep
+learning (3); machine learning's share of mapping rises across the three periods
+(≈35 % → 35 % → 43 %). The manuscript's headline "≈67 % traditional" pools
+mapping and projection tasks; see the note in `docs/reproduce.md`.
 
-## Figure 5b — projection method share by period
+## Figure 4b — projection method share by period
 
-```{r fig5b-projection-methods, fig.cap="Figure 5b. Annual proportion of projection tasks by method type."}
+```{r fig4b-projection-methods, fig.cap="Figure 4b. Annual proportion of projection tasks by method type."}
 projection_period <- df %>%
-  filter(!is.na(period), !is.na(projection_method_type)) %>%
+  filter(!is.na(period), !is.na(projection_method_type), projection_method_type != "") %>%
   count(period, projection_method_type) %>%
   group_by(period) %>%
   mutate(share = n / sum(n)) %>%
@@ -434,45 +491,28 @@ ggplot(projection_period,
        fill = "Method type")
 ```
 
-Expected (manuscript): traditional 68.8 % overall (CA-Markov 42.5 % of projections); DL 41.2 % of 2023–2025 projections, 66.7 % of 2024.
+Expected (manuscript, v9): among the 77 studies with a coded projection method,
+traditional methods lead (55) over deep learning (22); deep learning's share of
+projection rises to ≈42 % in 2023–2025. CA-Markov is the single most common
+projection approach (see `01_exploratory_analysis.Rmd` for the method-name
+breakdown).
 
-# Spatial typologies — Figure 6 and Table 1
+# Spatial typologies — Figure 5 and Table 1
 
-## Spatial typology primary classification
+## Figure 5a — overall spatial-typology frequency
 
-```{r spatial-primary-prep}
-df <- df %>%
-  mutate(
-    spatial_primary = case_when(
-      str_detect(spatial_form, "^peripheralization|^Peripheralisation") ~ "Peripheralisation",
-      str_detect(spatial_form, "^Fragmentation")                        ~ "Fragmentation",
-      str_detect(spatial_form, "^densification|^Densification")         ~ "Densification",
-      str_detect(spatial_form, "^Ribbon")                               ~ "Ribbon",
-      str_detect(spatial_form, "^Leapfrog")                             ~ "Leapfrog",
-      TRUE                                                              ~ "Unknown"
-    )
-  )
-```
-
-## Figure 6a — overall spatial-typology frequency
-
-```{r fig6a-typology, fig.cap="Figure 6a. Overall frequency of spatial typologies identified across the reviewed studies."}
-spatial_overall <- df %>%
-  filter(spatial_primary != "Unknown") %>%
-  count(spatial_primary) %>%
-  mutate(share = n / sum(n))
+```{r fig5a-typology, fig.cap="Figure 5a. Overall frequency of spatial typologies identified across the reviewed studies."}
+spatial_overall <- spatial_long %>%
+  count(spatial_form) %>%
+  mutate(share = n / sum(n),
+         spatial_form = factor(spatial_form, levels = typology_levels))
 
 ggplot(spatial_overall,
-       aes(x = reorder(spatial_primary, -share), y = share,
-           fill = spatial_primary)) +
+       aes(x = reorder(spatial_form, -share), y = share, fill = spatial_form)) +
   geom_col(width = 0.7) +
   geom_text(aes(label = sprintf("%.1f%%", 100 * share)),
             vjust = -0.4, size = 4) +
-  scale_fill_manual(values = c("Peripheralisation" = "#185FA5",
-                               "Fragmentation"     = "#1D9E75",
-                               "Densification"     = "#534AB7",
-                               "Ribbon"            = "#BA7517",
-                               "Leapfrog"          = "#D85A30")) +
+  scale_fill_manual(values = pal_typology) +
   scale_y_continuous(labels = percent_format(accuracy = 1),
                      expand = expansion(mult = c(0, 0.12))) +
   labs(title = "Overall frequency of spatial typologies",
@@ -480,22 +520,21 @@ ggplot(spatial_overall,
   theme(legend.position = "none")
 ```
 
-Expected (manuscript): peripheralisation 58.9 %, fragmentation 15.5 %, densification 10.1 %, ribbon 7.8 %, leapfrog 7.8 %.
+Expected (manuscript, v9): of 137 typology occurrences, peripheralisation 59.9 %
+(82), fragmentation 15.3 % (21), densification 10.2 % (14), ribbon 7.3 % (10),
+leapfrog 7.3 % (10).
 
-## Figure 6b — spatial typology by sub-region
+## Figure 5b — spatial typology by sub-region
 
-```{r fig6b-typology-region, fig.cap="Figure 6b. Proportional distribution of spatial typologies within each African sub-region."}
-spatial_region <- df %>%
-  filter(spatial_primary != "Unknown", region != "Unknown") %>%
-  count(region, spatial_primary)
+```{r fig5b-typology-region, fig.cap="Figure 5b. Proportional distribution of spatial typologies within each African sub-region."}
+spatial_region <- spatial_long %>%
+  filter(region != "Unknown") %>%
+  count(region, spatial_form) %>%
+  mutate(spatial_form = factor(spatial_form, levels = typology_levels))
 
-ggplot(spatial_region, aes(x = region, y = n, fill = spatial_primary)) +
+ggplot(spatial_region, aes(x = region, y = n, fill = spatial_form)) +
   geom_col(position = "fill", width = 0.7) +
-  scale_fill_manual(values = c("Peripheralisation" = "#185FA5",
-                               "Fragmentation"     = "#1D9E75",
-                               "Densification"     = "#534AB7",
-                               "Ribbon"            = "#BA7517",
-                               "Leapfrog"          = "#D85A30")) +
+  scale_fill_manual(values = pal_typology) +
   scale_y_continuous(labels = percent_format()) +
   labs(title = "Spatial typology composition by sub-region",
        x = NULL, y = "Share of occurrences",
@@ -503,106 +542,139 @@ ggplot(spatial_region, aes(x = region, y = n, fill = spatial_primary)) +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
 ```
 
+Expected (manuscript, v9): peripheralisation leads in every sub-region except
+Middle Africa — Northern 71.1 %, Eastern 63.6 %, Western 50.0 %, Southern 37.5 %
+(where it now leads ahead of fragmentation and leapfrog, both 25.0 %). Middle
+Africa carries only two occurrences (fragmentation, densification).
+
 ## Table 1 — typology by driver
 
+Table 1 reports, for each driver category, the distribution of spatial-typology
+**occurrences** among the studies naming that driver. Driver categories are
+matched by keyword against the full `main_drivers` field, so a study naming more
+than one driver contributes to each matching category (the categories are not a
+partition). Shares are of occurrences within each category and sum to ~100 %
+across the row.
+
 ```{r table1-driver-typology}
-# Expand primary_driver to the categories reported in Table 1
-driver_lookup <- c(
-  "demography"    = "Population growth and migration",
-  "migration"     = "Population growth and migration",
-  "planning"      = "Planning regulation",
-  "roads"         = "Road and transport expansion",
-  "transport"    = "Road and transport expansion",
-  "economy"       = "Economic development",
-  "industry"      = "Industrial activity"
+driver_cats <- tribble(
+  ~driver,                             ~pattern,
+  "Population growth and migration",   "migrat",
+  "Planning regulation",               "planning|regulat",
+  "Road and transport expansion",      "road|transport|network",
+  "Economic development",              "econom",
+  "Industrial activity",               "industr"
 )
 
-t1 <- df %>%
-  filter(spatial_primary != "Unknown",
-         !is.na(primary_driver),
-         primary_driver != "Unknown") %>%
-  mutate(driver = coalesce(driver_lookup[tolower(primary_driver)], primary_driver)) %>%
-  count(driver, spatial_primary) %>%
-  group_by(driver) %>%
-  mutate(share = round(100 * n / sum(n), 1),
-         total = sum(n)) %>%
+# Build Table 1 as a wide driver × typology matrix of occurrence shares.
+t1_long <- driver_cats %>%
+  rowwise() %>%
+  mutate(sub = list(
+    spatial_long %>%
+      filter(str_detect(str_to_lower(main_drivers), pattern)) %>%
+      count(spatial_form)
+  )) %>%
   ungroup() %>%
-  select(driver, total, spatial_primary, share) %>%
-  pivot_wider(names_from = spatial_primary, values_from = share,
-              values_fill = 0) %>%
+  select(driver, sub) %>%
+  unnest(sub) %>%
+  group_by(driver) %>%
+  mutate(total = sum(n),
+         share = round(100 * n / total, 1)) %>%
+  ungroup()
+
+t1 <- t1_long %>%
+  select(driver, total, spatial_form, share) %>%
+  mutate(spatial_form = factor(spatial_form, levels = typology_levels)) %>%
+  pivot_wider(names_from = spatial_form, values_from = share, values_fill = 0) %>%
   arrange(desc(total)) %>%
-  distinct(driver, .keep_all = TRUE)
+  select(driver, total, all_of(typology_levels))
 
 kable(
   t1,
-  caption = "Table 1 | Spatial typology distribution by driver of urban growth. Percentages are shares of occurrences within each driver and sum to 100 across rows (deviations due to rounding). Rows ordered by n.",
-  col.names = c("Driver", "n", "Peripheralisation", "Fragmentation",
+  caption = "Table 1 | Spatial typology distribution by driver of urban growth. Percentages are shares of typology occurrences within each driver and sum to ~100 across rows (rounding).",
+  col.names = c("Driver", "Occurrences", "Peripheralisation", "Fragmentation",
                 "Densification", "Ribbon", "Leapfrog")
 ) %>%
   kable_styling(bootstrap_options = c("striped", "hover"),
                 full_width = FALSE)
 ```
 
+Expected (manuscript, v9): Population growth and migration n = 20
+(50.0 / 15.0 / 20.0 / 15.0 / 0.0); Planning regulation n = 17
+(58.8 / 11.8 / 5.9 / 5.9 / 17.6); Road and transport expansion n = 14
+(42.9 / 28.6 / 0.0 / 14.3 / 14.3); Economic development n = 10
+(80.0 / 20.0 / 0.0 / 0.0 / 0.0); Industrial activity n = 10
+(80.0 / 10.0 / 10.0 / 0.0 / 0.0). NB: the submitted manuscript's Table 1 carries
+two stale cells from the v8 corpus — Population/Fragmentation (15.8 → 15.0) and
+Industrial/Densification (11.1 → 10.0); the values above (computed from v9) are
+correct and the manuscript should be updated to match.
+
 # Scenario analysis — Table 2
 
-The manuscript reports 108 studies that project urban growth forward, of which only 16 construct more than one future (52 scenarios in total).
+The manuscript reports 108 studies that project urban growth forward, of which
+only 16 construct more than one future (52 scenarios in total).
 
 ```{r scenario-overview}
-scenario_studies <- df %>%
-  filter(!is.na(scenario_count), scenario_count >= 1)
+projection_studies <- df %>% filter(urban_prediction == "Yes")
+scenario_studies   <- df %>% filter(!is.na(scenario_count), scenario_count >= 1)
+multi_scenario     <- df %>% filter(!is.na(scenario_count), scenario_count >= 2)
 
-multi_scenario <- scenario_studies %>%
-  filter(scenario_count >= 2)
-
-cat("Projection studies (total):      ", nrow(scenario_studies), "\n")
-cat("Multi-scenario studies:          ", nrow(multi_scenario), "\n")
-cat("Total scenarios across studies:  ", sum(multi_scenario$scenario_count), "\n")
+cat("Projection studies (urban_prediction == 'Yes'):", nrow(projection_studies), "\n")
+cat("Multi-scenario studies (scenario_count >= 2):   ", nrow(multi_scenario), "\n")
+cat("Total scenarios across multi-scenario studies:  ", sum(multi_scenario$scenario_count), "\n")
 ```
 
 ## Table 2 — scenario themes
 
+`scenario_theme` records which of the four canonical themes each study's scenarios
+touch. The chunk below reports, per theme, the **number of multi-scenario studies**
+in which it appears. The manuscript's Table 2 also reports a per-theme **scenario**
+count (BAU 15, Planning/policy 23, Ecological 10, Population-driven 4; total 52);
+those come from the scenario-level coding in the workbook's `Scenarios used` /
+`Scenario theme` fields and are reproduced in `docs/reproduce.md`, because a study
+can contribute several scenarios to one theme.
+
 ```{r table2-scenario-themes}
-# scenario_theme is a semicolon-separated list of themes per study
 theme_counts <- multi_scenario %>%
   separate_rows(scenario_theme, sep = ";\\s*") %>%
   filter(scenario_theme != "") %>%
   mutate(scenario_theme = str_trim(scenario_theme)) %>%
-  count(scenario_theme, name = "scenarios") %>%
-  mutate(
-    studies = map_int(scenario_theme,
-                      ~ multi_scenario %>%
-                        filter(str_detect(scenario_theme, fixed(.x))) %>%
-                        nrow()),
-    share   = round(100 * scenarios / sum(scenarios), 1)
-  ) %>%
-  arrange(desc(scenarios))
+  count(scenario_theme, name = "studies") %>%
+  arrange(desc(studies))
 
 kable(
   theme_counts,
-  caption = "Table 2 | Scenario themes identified across the 16 multi-scenario studies of African urban growth. Each study tested one or more scenarios; counts total 52.",
-  col.names = c("Scenario theme", "Scenarios", "Studies", "Share (%)")
+  caption = "Table 2 | Scenario themes across the 16 multi-scenario studies (number of studies in which each theme appears). Per-theme scenario totals (52 in all) are in docs/reproduce.md.",
+  col.names = c("Scenario theme", "Studies")
 ) %>%
   kable_styling(bootstrap_options = c("striped", "hover"),
                 full_width = FALSE)
 ```
 
+Expected (manuscript, v9): BAU appears in 15 of the 16 studies, planning/policy
+and infrastructure in 11, ecological protection in 9, population-driven /
+unconstrained in 4.
+
 ## Scenario horizons
 
 ```{r scenario-horizons}
-horizon_counts <- multi_scenario %>%
-  separate_rows(scenario_year, sep = ";\\s*") %>%
-  filter(scenario_year != "") %>%
-  mutate(scenario_year = as.integer(scenario_year)) %>%
-  count(scenario_year, name = "studies") %>%
-  arrange(desc(studies))
+horizon_terminal <- multi_scenario %>%
+  mutate(terminal = map_dbl(scenario_year, function(y) {
+    yrs <- as.integer(str_extract_all(y, "\\b(?:19|20)\\d{2}\\b")[[1]])
+    if (length(yrs)) max(yrs) else NA_real_
+  })) %>%
+  filter(!is.na(terminal)) %>%
+  count(terminal, name = "studies") %>%
+  arrange(terminal)
 
-kable(horizon_counts,
-      caption = "Scenario horizon years across the 16 multi-scenario studies.",
-      col.names = c("Horizon year", "Studies")) %>%
+kable(horizon_terminal,
+      caption = "Terminal (furthest) scenario horizon per multi-scenario study.",
+      col.names = c("Terminal horizon year", "Studies")) %>%
   kable_styling(full_width = FALSE)
 ```
 
-Expected (manuscript): 2030 (9 studies), 2035 (3), 2025 and 2050 (2 each), longest 2076 (Jagarnath et al. 2019).
+Expected (manuscript, v9): 2030 (8 studies), 2035 (3), 2050 (2), and single
+studies reaching 2025, 2038 and 2076 (Jagarnath et al. 2019).
 
 # Session info
 

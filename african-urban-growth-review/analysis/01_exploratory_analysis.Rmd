@@ -1,7 +1,7 @@
 ---
 title: "African Urban Growth Research — Exploratory Analyses"
-subtitle: "Additional tests performed during the review but not reported in the manuscript"
-author: "Alvin Adu-Asare"
+subtitle: "Additional tests performed during the review but not reported in the manuscript (corpus v9)"
+author: "Alvin Adu-Asare & Ayyoob Sharifi"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   html_document:
@@ -37,6 +37,14 @@ knitr::opts_chunk$set(
 # Scope
 
 This document contains analyses that were carried out while scoping the review but are **not reported in the manuscript**. They informed the authors' decisions about what to emphasise but do not appear in the published paper. They are preserved here for transparency and so future reviewers or readers can inspect the analytical choices.
+
+> **Data note (v9).** `expansion_clean` is the annual urban-expansion rate (%/yr)
+> parsed from the reviewers' expansion field (populated for 143 of 183 studies).
+> Study-level accuracy (`accuracy_pct`) was **not** harmonised across the corpus
+> because studies report accuracy per task and on mixed scales; task-level values
+> survive sparsely in `mapping_accuracy` / `projection_accuracy`. Chunks that need
+> harmonised accuracy therefore guard their inputs and skip when data is too thin,
+> so the document always knits.
 
 Analyses included:
 
@@ -241,19 +249,30 @@ kable(or_tbl,
 ```{r ttest-accuracy}
 acc_q <- df$accuracy_pct[df$method == "Quantitative" & !is.na(df$accuracy_pct)]
 acc_m <- df$accuracy_pct[df$method == "Mixed"        & !is.na(df$accuracy_pct)]
-t_acc <- t.test(acc_q, acc_m)
-d_acc <- cohens_d(acc_q, acc_m)
-print(t_acc); print(d_acc)
+if (length(acc_q) >= 3 && length(acc_m) >= 3) {
+  print(t.test(acc_q, acc_m))
+  print(cohens_d(acc_q, acc_m))
+} else {
+  cat("Study-level accuracy (accuracy_pct) is not harmonised in the public dataset,\n",
+      "so this comparison is skipped. See mapping_accuracy / projection_accuracy for\n",
+      "the sparse task-level values. n(Quantitative) =", length(acc_q),
+      ", n(Mixed) =", length(acc_m), "\n")
+}
 ```
 
 ## ANOVA — accuracy by city size
 
 ```{r anova-accuracy-size}
 acc_data <- df %>% filter(!is.na(accuracy_pct), city_size != "Unknown")
-aov_acc <- aov(accuracy_pct ~ city_size, data = acc_data)
-summary(aov_acc)
-eta_squared(aov_acc)
-leveneTest(accuracy_pct ~ city_size, data = acc_data)
+if (nrow(acc_data) >= 10 && n_distinct(acc_data$city_size) >= 2) {
+  aov_acc <- aov(accuracy_pct ~ city_size, data = acc_data)
+  print(summary(aov_acc))
+  print(eta_squared(aov_acc))
+  print(leveneTest(accuracy_pct ~ city_size, data = acc_data))
+} else {
+  cat("accuracy_pct is not harmonised in the public dataset; ANOVA skipped (n =",
+      nrow(acc_data), ").\n")
+}
 ```
 
 ## Fisher's exact — method × city size
